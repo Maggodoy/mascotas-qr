@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const { register, login, resetPassword } = require('../controllers/authController');
 
-// Rutas públicas de autenticación
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+router.post('/register', register);
+router.post('/login', login);
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

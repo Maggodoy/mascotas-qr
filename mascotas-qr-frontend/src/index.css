@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta Estado Normal */
+  --color-primary: #004D47;       /* Verde Pavo Real (Header / Nav / Botones principales) */
+  --color-accent: #128277;        /* Deep Aqua (Acciones secundarias / Acentos) */
+  --color-secondary: #52958B;     /* Lichen (Badges / Detalles) */
+  --color-warm-bg: #F4EADE;       /* Fondo cálido de tarjetas / estados */
+  --color-mist: #B9C4C9;          /* Mist (Fondo general de la pantalla) */
+
+  /* Paleta Estado Alerta / Emergencia */
+  --color-alert: #D13525;         /* Apple Red (Alerta de mascota perdida) */
+}
+
+/* Configuración del fondo general */
+body {
+  background-color: var(--color-mist);
+  min-height: 100vh;
+}

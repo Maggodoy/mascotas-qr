@@ -1,8 +1,7 @@
 const pool = require('../config/db');
 
 /**
- * GET /api/pets/:qrCode
- * Obtiene la información pública de una mascota según su código QR (PÚBLICO)
+ * GET /api/pets/scan/:qrCode
  */
 const getPetByQrCode = async (req, res) => {
   const { qrCode } = req.params;
@@ -11,19 +10,15 @@ const getPetByQrCode = async (req, res) => {
     const query = `
       SELECT 
         p.id AS pet_id,
-        p.nombre,
-        p.especie,
-        p.raza,
-        p.foto_url,
-        p.es_perdido,
-        p.informacion_medica,
-        p.instrucciones,
-        u.nombre AS dueno_nombre,
-        u.telefono AS dueno_telefono,
-        u.email AS dueno_email
-      FROM mascotas p
-      JOIN usuarios u ON p.usuario_id = u.id
-      WHERE p.codigo_qr = $1;
+        p.name,
+        p.photo_url,
+        p.medical_info,
+        p.is_lost,
+        u.email AS owner_email,
+        u.phone AS owner_phone
+      FROM pets p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.qr_code = $1;
     `;
 
     const result = await pool.query(query, [qrCode]);
@@ -37,13 +32,10 @@ const getPetByQrCode = async (req, res) => {
 
     const pet = result.rows[0];
 
-    // Log de escaneo asíncrono
-    const userAgent = req.headers['user-agent'] || 'Desconocido';
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-
+    // Log de escaneo asíncrono en scan_logs
     pool.query(
-      `INSERT INTO registros_de_escaneo (mascota_id, direccion_ip, user_agent) VALUES ($1, $2, $3)`,
-      [pet.pet_id, ip, userAgent]
+      `INSERT INTO scan_logs (pet_id) VALUES ($1)`,
+      [pet.pet_id]
     ).catch(err => console.error('Error al registrar log de escaneo:', err));
 
     return res.status(200).json({
@@ -62,27 +54,29 @@ const getPetByQrCode = async (req, res) => {
 
 /**
  * POST /api/pets
- * Crea una nueva mascota asociada al usuario autenticado (PROTEGIDO)
  */
 const createPet = async (req, res) => {
-  const usuario_id = req.user.id; // Extraído desde el token por authMiddleware
-  const { nombre, especie, raza, foto_url, informacion_medica, instrucciones, codigo_qr } = req.body;
+  const user_id = req.user.id;
+  const { name, medical_info, qr_code } = req.body;
 
-  if (!nombre || !codigo_qr) {
+  if (!name || !qr_code) {
     return res.status(400).json({
       status: 'error',
       message: 'El nombre y el código QR son requeridos.'
     });
   }
 
+  // Si se subió un archivo desde la galería usaremos /uploads/nombre_archivo, de lo contrario verifica si vino en body o queda null
+  const photo_url = req.file ? `/uploads/${req.file.filename}` : (req.body.photo_url || null);
+
   try {
     const query = `
-      INSERT INTO mascotas (usuario_id, nombre, especie, raza, foto_url, informacion_medica, instrucciones, codigo_qr)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO pets (user_id, name, photo_url, medical_info, qr_code)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *;
     `;
 
-    const values = [usuario_id, nombre, especie, raza, foto_url, informacion_medica, instrucciones, codigo_qr];
+    const values = [user_id, name, photo_url, medical_info, qr_code];
     const result = await pool.query(query, values);
 
     return res.status(201).json({
@@ -93,7 +87,7 @@ const createPet = async (req, res) => {
 
   } catch (error) {
     console.error('Error al crear mascota:', error);
-    if (error.code === '23505') { // Violación de unicidad en PostgreSQL
+    if (error.code === '23505') {
       return res.status(400).json({ status: 'error', message: 'El código QR ingresado ya está asignado a otra mascota.' });
     }
     return res.status(500).json({ status: 'error', message: 'Error al registrar la mascota.' });
@@ -102,13 +96,12 @@ const createPet = async (req, res) => {
 
 /**
  * GET /api/pets
- * Lista todas las mascotas pertenecientes al usuario autenticado (PROTEGIDO)
  */
 const getMyPets = async (req, res) => {
-  const usuario_id = req.user.id;
+  const user_id = req.user.id;
 
   try {
-    const result = await pool.query('SELECT * FROM mascotas WHERE usuario_id = $1 ORDER BY creado_en DESC', [usuario_id]);
+    const result = await pool.query('SELECT * FROM pets WHERE user_id = $1 ORDER BY created_at DESC', [user_id]);
     return res.status(200).json({
       status: 'success',
       data: result.rows
@@ -121,35 +114,30 @@ const getMyPets = async (req, res) => {
 
 /**
  * PUT /api/pets/:id
- * Actualiza los datos de una mascota (PROTEGIDO - Solo el dueño)
  */
 const updatePet = async (req, res) => {
   const { id } = req.params;
-  const usuario_id = req.user.id;
-  const { nombre, especie, raza, foto_url, es_perdido, informacion_medica, instrucciones } = req.body;
+  const user_id = req.user.id;
+  const { name, photo_url, medical_info, is_lost } = req.body;
 
   try {
-    // Verificar que la mascota pertenece al usuario
-    const petCheck = await pool.query('SELECT id FROM mascotas WHERE id = $1 AND usuario_id = $2', [id, usuario_id]);
+    const petCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [id, user_id]);
     if (petCheck.rows.length === 0) {
       return res.status(404).json({ status: 'error', message: 'Mascota no encontrada o no tienes permisos para editarla.' });
     }
 
     const query = `
-      UPDATE mascotas 
+      UPDATE pets 
       SET 
-        nombre = COALESCE($1, nombre),
-        especie = COALESCE($2, especie),
-        raza = COALESCE($3, raza),
-        foto_url = COALESCE($4, foto_url),
-        es_perdido = COALESCE($5, es_perdido),
-        informacion_medica = COALESCE($6, informacion_medica),
-        instrucciones = COALESCE($7, instrucciones)
-      WHERE id = $8 AND usuario_id = $9
+        name = COALESCE($1, name),
+        photo_url = COALESCE($2, photo_url),
+        medical_info = COALESCE($3, medical_info),
+        is_lost = COALESCE($4, is_lost)
+      WHERE id = $5 AND user_id = $6
       RETURNING *;
     `;
 
-    const values = [nombre, especie, raza, foto_url, es_perdido, informacion_medica, instrucciones, id, usuario_id];
+    const values = [name, photo_url, medical_info, is_lost, id, user_id];
     const result = await pool.query(query, values);
 
     return res.status(200).json({
