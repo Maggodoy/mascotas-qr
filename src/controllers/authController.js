@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const { sendResetPasswordEmail } = require('../config/mailer');
 /**
  * POST /api/auth/register
  */
@@ -126,8 +126,56 @@ const login = async (req, res) => {
   }
 };
 
+
 /**
- * POST /api/auth/reset-password o /api/auth/forgot-password
+ * POST /api/auth/forgot-password
+ */
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'El correo electrónico es requerido.'
+    });
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+
+  try {
+    const userResult = await pool.query('SELECT id, email FROM users WHERE email = $1', [cleanEmail]);
+    
+    // Por seguridad, respondemos éxito igual aunque el correo no exista (para evitar que espíen usuarios)
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+
+      // Generamos un token temporal de recuperación que expira en 15 minutos
+      const resetToken = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '15m' }
+      );
+
+      // Enviamos el correo real
+      await sendResetPasswordEmail(user.email, resetToken);
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Si el correo está registrado, se han enviado las instrucciones de recuperación.'
+    });
+
+  } catch (error) {
+    console.error('Error al enviar correo de recuperación:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Error al enviar el correo electrónico.'
+    });
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
  */
 const resetPassword = async (req, res) => {
   const { email } = req.body;
@@ -178,6 +226,6 @@ const resetPassword = async (req, res) => {
 module.exports = {
   register,
   login,
-  resetPassword,
-  forgotPassword: resetPassword // Alias para cubrir ambas rutas (/forgot-password y /reset-password)
+  forgotPassword,
+  resetPassword
 };
