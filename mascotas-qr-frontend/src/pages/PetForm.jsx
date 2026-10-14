@@ -157,8 +157,8 @@ export default function PetForm() {
     dataToSend.append('is_lost', String(formData.is_lost));
 
     if (selectedFile) {
+      // Únicamente enviamos 'photo', respetando lo configurado en upload.single('photo')
       dataToSend.append('photo', selectedFile);
-      dataToSend.append('image', selectedFile);
     }
 
     try {

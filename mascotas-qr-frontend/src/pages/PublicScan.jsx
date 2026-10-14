@@ -15,15 +15,8 @@ export default function PublicScan() {
         const response = await api.get(`/pets/scan/${qrCode}`);
         setPet(response.data.data);
       } catch (err) {
-        // Fallback de desarrollo para maquetado si no encuentra el QR en DB
-        setPet({
-          name: 'Milo',
-          birth_date: '2022-05-15',
-          photo_url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800',
-          is_lost: false,
-          medical_info: 'Tiene esquema de vacunación completo. Sensible a alimentos procesados.',
-          owner_phone: '+5493411234567',
-        });
+        console.error('Error al cargar mascota por QR:', err);
+        setError('No se pudo encontrar la información de la mascota o el código QR no es válido.');
       } finally {
         setLoading(false);
       }
@@ -76,6 +69,14 @@ export default function PublicScan() {
     );
   }
 
+  // Construcción robusta de la ruta de la foto apuntando al backend
+  const BACKEND_URL = 'http://localhost:3000';
+  const photoPath = pet.photo_url 
+    ? (pet.photo_url.startsWith('http') 
+        ? pet.photo_url 
+        : `${BACKEND_URL}${pet.photo_url.startsWith('/') ? '' : '/'}${pet.photo_url}`) 
+    : 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800';
+
   const cleanPhone = pet.owner_phone ? pet.owner_phone.replace(/[^0-9]/g, '') : '';
   const whatsappMessage = encodeURIComponent(`¡Hola! Encontré a tu mascota ${pet.name}. Por favor decime cómo podemos coordinar para reencontrarlos.`);
   const petAge = calculateAge(pet.birth_date);
@@ -95,7 +96,7 @@ export default function PublicScan() {
         {/* Header con foto de perfil */}
         <div className="relative bg-warm-bg/50 h-72">
           <img
-            src={pet.photo_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800'}
+            src={photoPath}
             alt={pet.name}
             className="w-full h-full object-cover"
           />

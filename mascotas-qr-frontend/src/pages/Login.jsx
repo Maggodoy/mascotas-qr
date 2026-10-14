@@ -20,17 +20,33 @@ export default function Login() {
     setLoading(true);
 
     try {
+      let response;
       if (isRegistering) {
         await api.post('/auth/register', formData);
-        const loginRes = await api.post('/auth/login', { email: formData.email, password: formData.password });
-        localStorage.setItem('token', loginRes.data.token);
+        response = await api.post('/auth/login', { email: formData.email, password: formData.password });
       } else {
-        const response = await api.post('/auth/login', { email: formData.email, password: formData.password });
-        localStorage.setItem('token', response.data.token);
+        response = await api.post('/auth/login', { email: formData.email, password: formData.password });
       }
+
+      console.log('Respuesta completa del Backend en Login:', response.data);
+
+      // Busca el token en cualquier posible nivel del JSON retornado
+      const token = 
+        response.data?.token || 
+        response.data?.data?.token || 
+        response.data?.accessToken;
+
+      if (!token) {
+        throw new Error('El servidor no devolvió un token. Revisa la consola F12.');
+      }
+
+      localStorage.setItem('token', token);
+      console.log('Token guardado correctamente en localStorage:', token);
+
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Ocurrió un error. Verificá los datos.');
+      console.error('Error en autenticación:', err);
+      setError(err.response?.data?.message || err.message || 'Ocurrió un error. Verificá los datos.');
     } finally {
       setLoading(false);
     }
@@ -39,8 +55,6 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-mist flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-8 border border-secondary/20">
-        
-        {/* Encabezado */}
         <div className="text-center mb-8">
           <div className="bg-warm-bg text-primary w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm border border-secondary/20">
             <img 
@@ -57,7 +71,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Mensaje de Error (Usa la paleta de Alerta / Apple Red) */}
         {error && (
           <div className="bg-alert/10 text-alert p-3 rounded-xl text-sm mb-6 flex items-center gap-2 border border-alert/20">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -152,7 +165,6 @@ export default function Login() {
             )}
           </div>
 
-          {/* Botón Principal (Verde Pavo Real -> Deep Aqua en hover) */}
           <button
             type="submit"
             disabled={loading}
@@ -162,7 +174,6 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Cambio entre Login y Registro */}
         <div className="mt-6 text-center border-t border-secondary/20 pt-4">
           <button
             onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
@@ -171,7 +182,6 @@ export default function Login() {
             {isRegistering ? '¿Ya tenés cuenta? Iniciá sesión' : '¿No tenés cuenta? Registrate gratis'}
           </button>
         </div>
-
       </div>
     </div>
   );

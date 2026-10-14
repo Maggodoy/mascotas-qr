@@ -90,7 +90,6 @@ const login = async (req, res) => {
 
     const user = result.rows[0];
 
-    // Compara quitando espacios accidentales en la contraseña
     const isPasswordValid = await bcrypt.compare(password.trim(), user.password_hash);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -128,10 +127,9 @@ const login = async (req, res) => {
 };
 
 /**
- * POST /api/auth/reset-password
+ * POST /api/auth/reset-password o /api/auth/forgot-password
  */
 const resetPassword = async (req, res) => {
-  // Acepta newPassword o password por si viene nombrado diferente desde el frontend
   const { email } = req.body;
   const newPassword = req.body.newPassword || req.body.password;
 
@@ -180,5 +178,6 @@ const resetPassword = async (req, res) => {
 module.exports = {
   register,
   login,
-  resetPassword
+  resetPassword,
+  forgotPassword: resetPassword // Alias para cubrir ambas rutas (/forgot-password y /reset-password)
 };
