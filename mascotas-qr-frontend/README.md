@@ -1,16 +1,71 @@
-# React + Vite
+# 💻 Mascotas QR - Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interfaz de usuario web desarrollada en **React** con **Vite** para el sistema de identificación y seguimiento de mascotas mediante códigos QR dinámicos.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Stack Tecnológico & Dependencias
 
-## React Compiler
+* **Framework/Librería:** React 18
+* **Empaquetador & Server:** Vite
+* **Rutado:** React Router Dom (`react-router-dom`)
+* **Íconos & UI:** Lucide React (`lucide-react`)
+* **Generación de QR:** `qrcode.react` / `qrcode`
+* **Peticiones HTTP:** Axios / Fetch API
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 📁 Estructura del Proyecto Frontend
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```text
+mascotas-qr-frontend/
+├── public/                 # Archivos estáticos e íconos de la app
+├── src/
+│   ├── assets/             # Imágenes y recursos multimedia
+│   ├── components/         # Componentes UI reutilizables (Navbar, Cards, Modales)
+│   ├── context/            # Contextos de React (Autenticación, Estado Global)
+│   ├── pages/              # Vistas/Páginas de la aplicación
+│   │   ├── Home.jsx        # Landing page principal
+│   │   ├── Login.jsx       # Inicio de sesión
+│   │   ├── Register.jsx    # Registro de usuario
+│   │   ├── Dashboard.jsx   # Panel privado de gestión de mascotas
+│   │   └── PublicScan.jsx  # Vista pública de lectura del código QR
+│   ├── services/           # Configuración de clientes API / HTTP
+│   ├── App.jsx             # Enrutador principal y layout
+│   └── main.jsx            # Punto de entrada de la aplicación
+├── .env.example            # Plantilla de variables de entorno
+├── package.json            # Dependencias y scripts de ejecucion
+└── vite.config.js          # Configuración de Vite
+
+
+⚙️ Variables de Entorno
+Crea un archivo .env en la raíz de la carpeta mascotas-qr-frontend tomando como base el archivo .env.example:
+VITE_API_URL=http://localhost:5000/api
+
+🚀 Instalación y Ejecución Local
+
+Navegar a la carpeta del frontend:
+cd mascotas-qr-frontend
+
+Instalar dependencias:
+npm install
+
+Iniciar el servidor de desarrollo:
+npm run dev
+
+Compilar para producción (Build de prueba):
+npm run build
+
+🌐 Rutas Principales de la Aplicación
+/ - Página de bienvenida / Landing page.
+
+/login - Formulario de inicio de sesión de dueños.
+
+/register - Registro de nuevos usuarios.
+
+/dashboard - Panel privado (lista de mascotas, edición, cambiar estado a "Perdido", descarga de QR).
+
+/scan/:id (o /mascota/:id) - Vista pública accesible al escanear la chapita QR.
+
+
+---
