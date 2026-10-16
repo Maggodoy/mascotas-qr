@@ -6,7 +6,7 @@ const transporter = nodemailer.createTransport({
   secure: false, // true para puerto 465, false para 587
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS.replace(/\s+/g, ''), // Limpia espacios por si quedan en el .env
+    pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : '', // Protegido contra valores undefined
   },
   tls: {
     // Esto evita el error de certificado autofirmado en desarrollo local

@@ -75,3 +75,5 @@ mascotas-qr/
 ├── mascotas-qr-frontend/   # Aplicación cliente en React (Vite)
 ├── src/ / server.js        # API RESTful en Node.js / Express
 └── README.md               # Documentación principal del sistema
+
+> 📄 **Documentación completa:** Puedes consultar la [Especificación Detallada de Casos de Uso (Camino Feliz y Excepciones)](./docs/CASOS_DE_USO.md).
