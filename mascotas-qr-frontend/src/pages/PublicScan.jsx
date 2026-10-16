@@ -69,8 +69,8 @@ export default function PublicScan() {
     );
   }
 
-  // Construcción robusta de la ruta de la foto apuntando al backend
-  const BACKEND_URL = 'http://localhost:3000';
+  // Construcción robusta de la ruta de la foto apuntando al backend en producción o local
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://mascotas-qr-backend.onrender.com';
   const photoPath = pet.photo_url 
     ? (pet.photo_url.startsWith('http') 
         ? pet.photo_url 

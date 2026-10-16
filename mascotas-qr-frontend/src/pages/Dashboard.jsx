@@ -10,6 +10,9 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
+  const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'https://mascotas-qr-iota.vercel.app';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://mascotas-qr-backend.onrender.com';
+
   // Función auxiliar para calcular la edad en base a la fecha de nacimiento
   const calculateAge = (birthDateString) => {
     if (!birthDateString) return null;
@@ -23,7 +26,6 @@ export default function Dashboard() {
     }
 
     if (age === 0) {
-      // Si tiene menos de 1 año, calculamos los meses
       const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth());
       return months <= 1 ? 'Menos de 1 mes' : `${months} meses`;
     }
@@ -54,7 +56,7 @@ export default function Dashboard() {
   }, []);
 
   const handleCopyLink = (qrCode, id) => {
-    const url = `${window.location.origin}/scan/${qrCode}`;
+    const url = `${FRONTEND_URL}/scan/${qrCode}`;
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -170,20 +172,20 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pets.map((pet) => {
-              const BACKEND_URL = 'http://localhost:3000';
               const photoPath = pet.photo_url 
                 ? (pet.photo_url.startsWith('http') 
                     ? pet.photo_url 
                     : `${BACKEND_URL}${pet.photo_url.startsWith('/') ? '' : '/'}${pet.photo_url}`) 
                 : '/placeholder-pet.png';
 
+              // URL estándar para mostrar en pantalla
               const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                `${window.location.origin}/scan/${pet.qr_code}`
+                `${FRONTEND_URL}/scan/${pet.qr_code}`
               )}`;
 
               // URL en alta resolución (500x500) ideal para impresión y chapitas
               const qrPrintUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-                `${window.location.origin}/scan/${pet.qr_code}`
+                `${FRONTEND_URL}/scan/${pet.qr_code}`
               )}`;
 
               const petAge = calculateAge(pet.birth_date);
@@ -299,7 +301,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Acciones de la Tarjeta (Incluye Descargar QR y Ver Vista QR) */}
+                    {/* Acciones de la Tarjeta */}
                     <div className="mt-6 pt-4 border-t border-secondary/20 grid grid-cols-3 gap-2">
                       <Link
                         to={`/pets/edit/${pet.id}`}
