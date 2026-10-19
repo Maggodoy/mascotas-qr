@@ -2,12 +2,21 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs'); // Importamos fs para manejar carpetas
 const petController = require('../controllers/petController');
 const verifyToken = require('../middlewares/authMiddleware');
 
+// Configuración de almacenamiento asegurando que el directorio exista
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    const uploadDir = path.join(__dirname, '../uploads');
+    
+    // Si la carpeta no existe, la crea automáticamente
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
