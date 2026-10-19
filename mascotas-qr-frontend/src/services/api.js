@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const apiURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:3000/api',
+  baseURL: apiURL ? `${apiURL}/api` : 'https://mascotas-qr-backend.onrender.com/api',
 });
 
 // Interceptor para adjuntar automáticamente el token en las peticiones
