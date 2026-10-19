@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import { Phone, MessageCircle, AlertTriangle, Heart, ShieldCheck, Calendar } from 'lucide-react';
+import { Phone, MessageCircle, AlertTriangle, Heart, ShieldCheck, Calendar, MapPin } from 'lucide-react';
 
 export default function PublicScan() {
   const { qrCode } = useParams();
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [location, setLocation] = useState(null); // Estado para guardar la ubicación
 
   useEffect(() => {
     const fetchPet = async () => {
@@ -26,6 +27,25 @@ export default function PublicScan() {
       fetchPet();
     }
   }, [qrCode]);
+
+  // Obtener la geolocalización del escannear al cargar la vista
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            mapUrl: `https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`
+          });
+        },
+        (err) => {
+          console.warn('El usuario denegó la geolocalización o no está disponible:', err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+  }, []);
 
   // Función para calcular la edad exacta en años o meses
   const calculateAge = (birthDateString) => {
@@ -78,7 +98,15 @@ export default function PublicScan() {
     : 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800';
 
   const cleanPhone = pet.owner_phone ? pet.owner_phone.replace(/[^0-9]/g, '') : '';
-  const whatsappMessage = encodeURIComponent(`¡Hola! Encontré a tu mascota ${pet.name}. Por favor decime cómo podemos coordinar para reencontrarlos.`);
+  
+  // Construimos el mensaje de WhatsApp incluyendo la ubicación si el navegador la otorgó
+  let baseMessage = `¡Hola! Encontré a tu mascota ${pet.name}.`;
+  if (location) {
+    baseMessage += ` La escaneé en esta ubicación: ${location.mapUrl}`;
+  }
+  baseMessage += ` Por favor decime cómo podemos coordinar para reencontrarlos.`;
+  
+  const whatsappMessage = encodeURIComponent(baseMessage);
   const petAge = calculateAge(pet.birth_date);
 
   return (
@@ -127,6 +155,14 @@ export default function PublicScan() {
 
         <div className="p-6 space-y-6">
 
+          {/* Aviso sutil si se detectó la ubicación */}
+          {location && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2 text-xs text-green-800">
+              <MapPin className="w-4 h-4 text-green-600 shrink-0" />
+              <span>Ubicación detectada con éxito. Se adjuntará al mensaje de WhatsApp.</span>
+            </div>
+          )}
+
           {/* Ficha Médica / Observaciones */}
           {pet.medical_info && (
             <div className="bg-warm-bg/40 border border-secondary/30 rounded-2xl p-4">
@@ -156,7 +192,7 @@ export default function PublicScan() {
                 }`}
               >
                 <MessageCircle className="w-5 h-5" />
-                Enviar WhatsApp
+                Enviar WhatsApp con mi ubicación
               </a>
             )}
 
