@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendResetPasswordEmail } = require('../config/mailer');
+
 /**
  * POST /api/auth/register
  */
@@ -126,7 +127,6 @@ const login = async (req, res) => {
   }
 };
 
-
 /**
  * POST /api/auth/forgot-password
  */
@@ -145,18 +145,15 @@ const forgotPassword = async (req, res) => {
   try {
     const userResult = await pool.query('SELECT id, email FROM users WHERE email = $1', [cleanEmail]);
     
-    // Por seguridad, respondemos éxito igual aunque el correo no exista (para evitar que espíen usuarios)
     if (userResult.rows.length > 0) {
       const user = userResult.rows[0];
 
-      // Generamos un token temporal de recuperación que expira en 15 minutos
       const resetToken = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: '15m' }
       );
 
-      // Enviamos el correo real
       await sendResetPasswordEmail(user.email, resetToken);
     }
 
@@ -223,9 +220,44 @@ const resetPassword = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /api/auth/delete-account
+ */
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id; // Viene del token gracias al authMiddleware
+
+    // 1. Primero borramos las mascotas vinculadas a este usuario en la base de datos
+    await pool.query('DELETE FROM pets WHERE owner_id = $1', [userId]);
+
+    // 2. Luego eliminamos al usuario
+    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Usuario no encontrado.'
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Cuenta y registros eliminados exitosamente.'
+    });
+
+  } catch (error) {
+    console.error('Error al eliminar la cuenta:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Error al intentar eliminar la cuenta.'
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  deleteAccount
 };

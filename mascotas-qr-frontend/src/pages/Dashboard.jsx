@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Heart, Eye, Copy, Check, Sparkles, AlertTriangle, Bell, BellOff, Calendar, Download } from 'lucide-react';
+import { Plus, Heart, Eye, Copy, Check, Sparkles, AlertTriangle, Bell, BellOff, Calendar, Download, LogOut, Trash2 } from 'lucide-react';
 import api from '../services/api';
 
 export default function Dashboard() {
@@ -62,6 +62,35 @@ export default function Dashboard() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
+  // Función para eliminar cuenta
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      '⚠️ ¿Estás seguro/a de que deseas eliminar tu cuenta?\nEsta acción es irreversible y borrará todos los registros y códigos QR de tus mascotas.'
+    );
+
+    if (confirmed) {
+      try {
+        const token = localStorage.getItem('token');
+        await api.delete('/auth/delete-account', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert('Tu cuenta ha sido eliminada con éxito.');
+        localStorage.clear();
+        window.location.href = '/register';
+      } catch (err) {
+        console.error('Error al eliminar la cuenta:', err);
+        alert('No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.');
+      }
+    }
+  };
+
   // Función para activar o desactivar la alerta de pérdida directo desde el Dashboard
   const handleToggleLostStatus = async (petId, currentStatus) => {
     try {
@@ -101,7 +130,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-mist text-gray-800 pb-16">
       
-      {/* Barra Superior / Header */}
+      {/* Barra Superior / Header con Botón de Cerrar Sesión */}
       <header className="bg-white border-b border-secondary/20 sticky top-0 z-10 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,13 +147,24 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <Link
-            to="/pets/new"
-            className="inline-flex items-center gap-2 bg-primary hover:bg-accent text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-md shadow-primary/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Registrar Mascota</span>
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/pets/new"
+              className="inline-flex items-center gap-2 bg-primary hover:bg-accent text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors shadow-md shadow-primary/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Registrar Mascota</span>
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              title="Cerrar sesión"
+              className="inline-flex items-center gap-1.5 bg-warm-bg hover:bg-gray-200 text-gray-700 font-semibold text-sm px-3.5 py-2.5 rounded-xl transition-colors border border-secondary/30 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 text-primary" />
+              <span className="hidden sm:inline">Salir</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -338,6 +378,26 @@ export default function Dashboard() {
             })}
           </div>
         )}
+
+        {/* Sección de Zona de Peligro / Eliminar Cuenta */}
+        <div className="mt-16 bg-white rounded-3xl border border-red-100 p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <h3 className="text-base font-bold text-red-600 mb-1 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              <span>Zona de Peligro - Gestión de Cuenta</span>
+            </h3>
+            <p className="text-xs md:text-sm text-gray-500 max-w-xl">
+              Si ya no deseas utilizar la plataforma, puedes eliminar tu cuenta definitivamente. Esta acción borrará todas tus mascotas registradas y los códigos QR asociados de forma permanente.
+            </p>
+          </div>
+          <button
+            onClick={handleDeleteAccount}
+            className="bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 font-semibold text-xs md:text-sm px-5 py-3 rounded-xl transition-colors whitespace-nowrap shadow-sm cursor-pointer"
+          >
+            Eliminar mi cuenta
+          </button>
+        </div>
+
       </main>
     </div>
   );
