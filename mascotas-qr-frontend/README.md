@@ -37,11 +37,6 @@ mascotas-qr-frontend/
 ├── package.json            # Dependencias y scripts de ejecucion
 └── vite.config.js          # Configuración de Vite
 
-
-⚙️ Variables de Entorno
-Crea un archivo .env en la raíz de la carpeta mascotas-qr-frontend tomando como base el archivo .env.example:
-VITE_API_URL=http://localhost:5000/api
-
 🚀 Instalación y Ejecución Local
 
 Navegar a la carpeta del frontend:
